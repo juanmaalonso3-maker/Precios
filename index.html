@@ -92,6 +92,14 @@ code { font-family: var(--mono); font-size: .92em; background: var(--kenta-tint)
 .arranque__error p { color: var(--ink-2); }
 .arranque__error ol { color: var(--ink-2); padding-left: 20px; }
 .arranque__error li { margin: 6px 0; }
+.arranque__error pre {
+  font-family: var(--mono); font-size: 12px; background: var(--ink); color: #E8EDF4;
+  padding: 10px 13px; border-radius: var(--r); overflow-x: auto; margin: 10px 0;
+}
+.arranque__error details { margin-top: 14px; }
+.arranque__error summary { cursor: pointer; font-size: 12.5px; color: var(--muted); }
+.arranque__error summary:hover { color: var(--ink); }
+.arranque__pie { font-size: 11.5px; color: var(--tenue); margin-top: 16px; word-break: break-all; }
 
 /* ── Estructura ────────────────────────────────────────────────────────── */
 .app { display: grid; grid-template-columns: 236px 1fr; height: 100vh; }
@@ -398,6 +406,62 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
   </main>
 </div>
 
+<!--
+  Diagnóstico de arranque.
+
+  Script clásico (no módulo) a propósito: si los módulos ES no se ejecutan
+  —el caso típico es abrir el archivo con doble clic, porque file:// los
+  bloquea— este script igual corre y explica qué pasó. Sin esto la pantalla de
+  carga se queda fija para siempre sin decir nada.
+-->
+<script>
+(function () {
+  var errores = [];
+  var registrar = function (msg) { if (msg && errores.indexOf(msg) < 0) errores.push(msg); };
+
+  window.addEventListener('error', function (e) {
+    if (e.target && e.target.src) registrar('No se pudo cargar el archivo: ' + e.target.src);
+    else registrar(e.message);
+  }, true);
+
+  window.addEventListener('unhandledrejection', function (e) {
+    registrar(String((e.reason && e.reason.message) || e.reason));
+  });
+
+  setTimeout(function () {
+    if (window.__appArranco) return;
+    var caja = document.getElementById('cargando');
+    if (!caja) return;
+
+    var esArchivo = location.protocol === 'file:';
+    var causa, arreglo;
+
+    if (esArchivo) {
+      causa = 'Abriste el archivo directamente desde el disco. El navegador bloquea los módulos de JavaScript cuando la dirección empieza con <code>file://</code>, así que la aplicación nunca llega a ejecutarse.';
+      arreglo = '<p>Levantá un servidor local desde la carpeta del proyecto:</p>'
+        + '<pre>python3 -m http.server 8080</pre>'
+        + '<p>Y entrá a <code>http://localhost:8080</code>. En GitHub Pages funciona sin este paso.</p>';
+    } else if (errores.length) {
+      causa = 'Falló la carga de uno o más archivos del proyecto.';
+      arreglo = '<p>Verificá que la estructura de carpetas esté completa: <code>index.html</code> en la raíz, '
+        + 'y las carpetas <code>src/</code> y <code>data/</code> al lado, respetando mayúsculas y minúsculas.</p>';
+    } else {
+      causa = 'La aplicación no terminó de arrancar y no informó ningún error.';
+      arreglo = '<p>Abrí la consola del navegador (F12, pestaña Consola) para ver el detalle.</p>';
+    }
+
+    caja.innerHTML = '<div class="arranque__error">'
+      + '<h1>La aplicación no pudo arrancar</h1>'
+      + '<p>' + causa + '</p>'
+      + arreglo
+      + (errores.length
+        ? '<details><summary>Detalle técnico</summary><pre>' + errores.join('\n').replace(/</g, '&lt;') + '</pre></details>'
+        : '')
+      + '<p class="arranque__pie">Dirección actual: <code>' + String(location.href).replace(/</g, '&lt;') + '</code></p>'
+      + '</div>';
+  }, 5000);
+})();
+</script>
 <script type="module" src="./src/ui/app.js"></script>
 </body>
 </html>

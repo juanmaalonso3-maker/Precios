@@ -95,7 +95,9 @@ const irA = () => {
 };
 
 const mostrarError = (mensaje) => {
-  document.getElementById('cargando').innerHTML = `
+  const caja = document.getElementById('cargando');
+  if (!caja) return;
+  caja.innerHTML = `
     <div class="arranque__error">
       <h1>No se pudieron cargar los datos</h1>
       <p>${escapar(mensaje)}</p>
@@ -104,14 +106,19 @@ const mostrarError = (mensaje) => {
         <li>Revisá que la implementación esté en <b>Ejecutar como: Yo</b> y <b>Acceso: Cualquier persona</b>.</li>
         <li>Confirmá la URL <code>/exec</code> en <code>src/data/api.js</code>.</li>
       </ol>
-      <p>Mientras tanto podés poner <code>USAR_DATOS_LOCALES = true</code> para ver la app con datos de ejemplo.</p>
+      <p>Mientras tanto podés poner <code>USAR_DATOS_LOCALES = true</code> en
+      <code>src/data/api.js</code> para ver la aplicación con datos de ejemplo.</p>
     </div>`;
 };
 
 const arrancar = async () => {
+  // Le avisa al diagnóstico de index.html que los módulos sí se ejecutaron, así
+  // no pisa el mensaje de error con uno genérico.
+  window.__appArranco = true;
   try {
     await cargar();
-    document.getElementById('cargando').remove();
+    const caja = document.getElementById('cargando');
+    if (caja) caja.remove();
     document.getElementById('aplicacion').hidden = false;
     if (USAR_DATOS_LOCALES) {
       notificar('Modo datos de ejemplo: podés navegar todo, pero los cambios no se guardan.', 'aviso');
